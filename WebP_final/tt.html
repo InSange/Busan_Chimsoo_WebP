@@ -1,0 +1,35 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>공공데이터 API 사용 예제</title>
+</head>
+
+<body>
+    <p id="sample_data"></p>
+    <script>
+        const url = 'http://apis.data.go.kr/1741000/DisasterMsg3/getDisasterMsg1List?ServiceKey=gVjf9Qby20bDX5FZ%2BSry1%2FkV2GtI%2BywHeuaIx9ssaMEHrOsrIOiG%2Bq1pB4CFccRj67xxpjrFiB7tioAac4LjBw%3D%3D&type=json&pageNo=1&numOfRows=1000';
+        
+        dataPane = document.getElementById("sample_data");
+
+        var data = [];
+        fetch(url)
+            .then(res => res.json())
+            .then(resJson => {
+                for(var i = 0; i < resJson.DisasterMsg[1].row.length; i++) {
+                    var obj = {};
+                    if(resJson.DisasterMsg[1].row[i].location_name.includes('부산광역시'))
+                    {
+                        //data.push(resJson.DisasterMsg[1].row[i])
+                        obj['날짜'] = resJson.DisasterMsg[1].row[i].create_date;
+                        obj['지역이름'] = resJson.DisasterMsg[1].row[i].location_name;
+                        obj['메시지'] = resJson.DisasterMsg[1].row[i].msg;
+                        data.push(obj);
+                    }
+                }
+                console.log(data.length);
+                dataPane.innerText = JSON.stringify(data, null, 1)
+            });
+    </script>
+</body>
+
+</html>

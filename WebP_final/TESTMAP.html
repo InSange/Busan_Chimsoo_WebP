@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>공공데이터 + 카카오맵API</title>
+        <style>
+            @font-face {
+                font-family: 'tmon';
+                src: url("TMONBlack.ttf");
+            }
+            html, body { margin: 0; padding: 0; height: 100%; overflow:hidden;}
+            .header { width: 100%; height: 5%; display: block; color: #242526; }
+            .aside { width: 20%; height: 80%; float: left; }
+            .section { width: 100%; height: 90%; float: left; 
+                box-shadow:10px 5px 5px black inset;
+            }
+            .footer { width: 100%; height: 0%; clear: both; background: plum; }
+            .myButton {
+                    position: relative;
+                    box-sizing: border-box;
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                    background: #6aafe6;
+                    font-family: tmon;
+                    color: #FFF;
+                    border-radius:15px;
+                    border: none;
+                    font-size: 17px;
+                    display:inline-block;
+                    cursor:pointer;
+                    padding: 7px 25px;
+                    text-decoration:none;
+                    transition: 0.25s;
+                }
+          
+            .myButton:hover {
+                letter-spacing: 2px;
+                transform: scale(1.1);
+                }
+                .myButton:active {  
+                    transform: scale(1.2);
+                }
+                .jaenanBox::-webkit-scrollbar{
+                    display:none;
+                }
+                .jaenanBox {
+                    padding: 10px 10px; margin: 10px 10px; font-weight: bold; 
+                    border-radius: 15px; box-shadow:1px 1px 3px 1px #dadce0;
+                }
+                .markerBox {
+                    padding: 2em 2em ; font-weight: bold; color: #000000; background: #FFF; border: solid 3px #000000 ;
+                }
+                .jaenan { 
+                    width : 20%; height: 8%; float : left; padding-top: 30px; 
+                    font-size : 35px; text-align: center; color:red; font-family: tmon;
+                    box-shadow: -2px -2px 4px 0px #dadce0;
+                }
+        </style>
+        <script type="text/javascript" src="./data.json"></script>
+        <script type="text/javascript" src='./hacheon_data.json'></script>
+        <script> riverJsonData = JSON.parse(JSON.stringify(hacheon)); </script>
+        <script>
+function createDIV(dataMsg) {
+    var obj = document.getElementById('msg');
+    var newDIV = document.createElement('div');
+    newDIV.className = 'jaenanBox';
+    newDIV.style.margin = '15px';
+    newDIV.style.width = '80%';
+    newDIV.style.height = '20%'; 
+    newDIV.style.overflow = 'scroll';
+    newDIV.innerText = dataMsg;   
+    newDIV.setAttribute('id', 'myDiv');
+    newDIV.style.background = '#F1F3F5';
+    obj.appendChild(newDIV);
+}
+let chimsooMapState = 1;
+let shelterMapState = -1;
+let nearShelterMapState = -1;
+function ChangeChimsoo() {
+    chimsooMapState *= -1;
+    console.log("침수 클릭 후: " + chimsooMapState);
+    removeChimsooMarker();
+    DrawChimsooMap();
+}
+function ChangeShelter() {
+    shelterMapState *= -1;
+    console.log("대피소 클릭 후: " + shelterMapState);
+    removeShelterMarker();
+    DrawShelterMap();
+}
+function ChangeNearShelter() {
+    nearShelterMapState *= -1;
+    removeShelterMarker();
+    DrawNearShelterMap();
+}
+function removeChimsooMarker() {
+    console.log("제거해야하는 침수 마커 개수: " + chimsooMarkers.length);
+    for ( var i = 0; i < chimsooMarkers.length; i++ ) {
+        chimsooMarkers[i].setMap(null);
+    }
+    chimsooMarkers = [];
+}
+function removeShelterMarker() {
+    console.log("제거해야하는 대피소 마커 개수: " + shelterMarkers.length);
+    for ( var i = 0; i < shelterMarkers.length; i++ ) {
+        shelterMarkers[i].setMap(null);
+    }
+    shelterMarkers = [];
+    clustererShelter.clear();
+}
+// 예방수칙 및 행동 강령 팝업창
+function yoryung(buttonId){
+    let yoryung = document.getElementById("yoryung");
+    if(yoryung.style.zIndex == '1000') {
+        yoryung.style.zIndex = '-1'
+        changeButtonColor(buttonId, true)
+    }
+    else {
+        yoryung.style.zIndex = '1000'
+        changeButtonColor(buttonId, false)
+    }
+}
+
+function changeButtonColor(buttonId, buttonStatus){
+    var button = document.getElementById(buttonId)
+    if(buttonStatus){
+        button.style.color = "#242526"
+        button.style.backgroundColor = "white"
+    }else{
+        button.style.color = "white"
+        button.style.backgroundColor = "#6aafe6"
+    }
+}
+function resizeDialog(buttonId, dialogId){
+    let dialog = document.getElementById(dialogId);
+    if(dialog.style.zIndex == '1000') {
+        dialog.style.zIndex = '-1'
+        changeButtonColor(buttonId, true)
+    }
+    else {
+        dialog.style.zIndex = '1000'
+        changeButtonColor(buttonId, false)
+    }
+}
+
+            function resizeMap(buttonId) {
+                var mapContainer = document.getElementById('map');
+                var jaenanButton = document.getElementById('jaenanButton')
+                if(document.body.clientWidth / mapContainer.clientWidth == 1){
+                    mapContainer.style.width = '80%'; 
+                    changeButtonColor(buttonId, false)
+                    jaenanButton.style.top = "-47px"
+                }else{
+                    mapContainer.style.width = '100%'
+                    jaenanButton.style.top = "0px"
+                    changeButtonColor(buttonId, true)
+                }
+            }
+            
+
+            roadJsonData = JSON.parse(JSON.stringify(chimsoo));
+        </script>
+    </head>
+    <body>
+        <div style ="font-family: tmon; font-size : 50px; padding: 30px 50px 30px 50px;"  class = "header">
+            부<span style = "font-size: 20px;">산광역시</span>침<span style = "font-size: 20px;">수</span>개<span style = "font-size: 20px;">발지도</span>
+            <button id = "ChimsooChange" class="myButton" type="button" onclick="ChangeChimsoo()"><span style = "font-family: tmon">침수지역 지도</span></button>
+            <button id = "ShelterChange" class="myButton" type="button" onclick="ChangeShelter()" style = "background:#FFF; color: #242526;"><span style = "font-family: tmon">대피소 지도</span></button>
+            <button id = "NearShelterChange" class="myButton" type="button" onclick="ChangeNearShelter()" style = "background:#FFF; color: #242526;"><span style = "font-family: tmon">내 근처 대피소 지도</span></button>
+        </div>
+        <div class="section" id="map">
+            <div id = "bumrye" style="position: absolute; right: 5px; bottom: 0px; z-index: -1;"> <img style = "width: 300px; height: 230px;" src="bumrye.png" /> </div>
+            <div style="position: absolute; right: 145px; top: 3px; z-index: 1001;"> <button id = "yoryungButton" style = "background:#FFF; color: #242526;" class = "myButton" type='button' onclick="resizeDialog('yoryungButton', 'yoryung')";>안전 수칙</span></button></div>
+            <div style="position: absolute; right: 300px; top: 3px; z-index: 1001;"> <button id = "bumryeButton" style = "background:#FFF; color: #242526;" class = "myButton" type='button' onclick="resizeDialog('bumryeButton', 'bumrye')";>범례</span></button></div>
+            <div style="position: absolute; right: 3px; top: 50px; z-index: 1001;"> <button id = "jaenanButton" style = "background:#FFF; color: #242526;"class = "myButton" type='button' onclick="resizeMap('jaenanButton')";>재난 문자</span></button></div>
+            <div id = "yoryung" style="position: absolute; right: 0px; top: 80px; z-index: -1"> <img src="yoryung.png"></img></div>
+        </div>
+        <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=fd8442451868ac812e4652049b10a590&libraries=clusterer"></script>
+        <script type = "text/javascript" src = "./Busan_shelters.json"></script>
+        <div class = "jaenan"><img src = "siren.png" width="40px" height="40px">  긴급 재난 문자</div>
+        <div class = "aside" id="msg" style="overflow: auto"; ></div>
+        <script>
+
+// 대피소
+let shelterData = JSON.parse(JSON.stringify(data));
+
+
+            // 인포윈도우 표시 열기
+            function mouseOverListener(map, marker, infoWindow) {
+                return function () {
+                    infoWindow.open(map, marker);
+                };
+            }
+                // 인포윈도우 표시 닫기
+            function mouseOutListener(infoWindow) {
+                return function () {
+                    infoWindow.close();
+                };
+            } 
+
+            // 지도 설정.
+            var mapContainer = document.getElementById("map");
+                var mapOption = {
+                    center: new kakao.maps.LatLng(35.13417, 129.11397),
+                    level: 6,
+                };
+
+                var map = new kakao.maps.Map(mapContainer, mapOption);
+
+                var shelterImageSrc1 = './home.png'
+                var chimsooImageSrcGood = './warningLv1.png' // 마커이미지의 주소입니다  
+                var chimsooImageSrcCaution = './warningLv2.png' // 마커이미지의 주소입니다    
+                var chimsooImageSrcAlert = './warningLv3.png' // 마커이미지의 주소입니다    
+                var chimsooImageSrcDanger = './warningLv4.png' // 마커이미지의 주소입니다      
+                imageSize = new kakao.maps.Size(30, 30), // 마커이미지의 크기입니다
+                imageOption = {offset: new kakao.maps.Point(15, 15)}; // 마커이미지의 옵션입니다. 마커의 좌표와 일치시킬 이미지 안에서의 좌표를 설정합니다.
+      
+                // 마커의 이미지정보를 가지고 있는 마커이미지를 생성합니다
+                var markerImageShelter = new kakao.maps.MarkerImage(shelterImageSrc1, imageSize, imageOption)
+                var markerImageGood = new kakao.maps.MarkerImage(chimsooImageSrcGood, imageSize, imageOption)
+                var markerImageCaution = new kakao.maps.MarkerImage(chimsooImageSrcCaution, imageSize, imageOption)
+                var markerImageAlert = new kakao.maps.MarkerImage(chimsooImageSrcAlert, imageSize, imageOption)
+                var markerImageDanger = new kakao.maps.MarkerImage(chimsooImageSrcDanger, imageSize, imageOption)
+
+                var mapTypeControl = new kakao.maps.MapTypeControl();
+
+                // 지도의 상단 우측에 지도 타입 변경 컨트롤을 추가한다
+                map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
+
+                var clustererShelter = new kakao.maps.MarkerClusterer({
+                    map: map,
+                    averageCenter: true,
+                    minLevel: 5,
+                });
+
+            // 침수 및 쉘터 마커 배열.
+            let chimsooMarkers = [];
+            let shelterMarkers = [];
+function DrawShelterMap() {
+    if(shelterMapState > 0) 
+    {
+        changeButtonColor("ShelterChange", false);
+        if(nearShelterMapState > 0)
+        {
+            nearShelterMapState *= -1;
+            changeButtonColor("NearShelterChange", true);
+        }
+        let shelters = shelterData;
+
+        for(let i = 0; i < shelters.length; i++){
+            if(shelters[i]["지진해일대피소운영상태"] == "Y") {
+                let lat = shelters[i]["위도"];
+                let lng = shelters[i]["경도"];
+                var checkll = new kakao.maps.LatLng(lat,lng);
+
+                let marker = new kakao.maps.Marker({
+                    position : new kakao.maps.LatLng(lat, lng),
+                    map : map,
+                });
+                marker.setImage(markerImageShelter);
+
+                let infoWindow = new kakao.maps.InfoWindow({
+                    content : '<div class = "markerBox">' + shelters[i]["지진해일대피소명"]+'<hr>' + "수용가능인원: "
+                            + shelters[i]["최대수용인원수"]+ '<br>' + "전화번호: " + shelters[i]["지진해일대피소전화번호"] + '</div>'
+                });
+                shelterMarkers.push(marker);    
+                kakao.maps.event.addListener(marker, "mouseover", mouseOverListener(map,marker, infoWindow));
+                kakao.maps.event.addListener(marker, "mouseout", mouseOutListener(infoWindow));
+                }
+            }
+        console.log("대피소마커 개수: " + shelterMarkers.length);
+        clustererShelter.addMarkers(shelterMarkers);
+    }
+    else if(shelterMapState < 0) {
+        removeShelterMarker();
+        changeButtonColor("ShelterChange", true);
+    }
+}
+
+function DrawNearShelterMap() {
+    GPSinfowindow.close();
+    message = "";
+    if(nearShelterMapState > 0) 
+    {
+        message = '내 주변 대피소' + '<hr>';
+        changeButtonColor("NearShelterChange", false);
+        if(shelterMapState > 0)
+        {
+            shelterMapState *= -1;
+            changeButtonColor("ShelterChange", true);
+        }
+        let shelters = shelterData;
+        for(var i = 0; i < shelters.length; i++){
+            if(shelters[i]["지진해일대피소운영상태"] == "Y") {
+                let lat = shelters[i]["위도"];
+                let lng = shelters[i]["경도"];
+                var checkll = new kakao.maps.LatLng(lat,lng);
+                if(lb.contain(checkll) == false) {
+                        continue;
+                    }
+                let marker = new kakao.maps.Marker({
+                        position : new kakao.maps.LatLng(lat, lng),
+                        map : map,
+                    });
+                marker.setImage(markerImageShelter);
+                let infoWindow = new kakao.maps.InfoWindow({
+                    content : '<div class = "markerBox">' + shelters[i]["지진해일대피소명"]+'<hr>' + "수용가능인원: "
+                        + shelters[i]["최대수용인원수"]+ '<br>' + "전화번호: " + shelters[i]["지진해일대피소전화번호"] + '</div>'
+                });
+                message += '<div>' + shelters[i]["지진해일대피소명"] +'</div>' +'<br>';
+                shelterMarkers.push(marker);    
+                kakao.maps.event.addListener(marker, "mouseover", mouseOverListener(map,marker, infoWindow));
+                kakao.maps.event.addListener(marker, "mouseout", mouseOutListener(infoWindow));
+            }
+        }
+        console.log("대피소마커 개수: " + shelterMarkers.length);
+        clustererShelter.addMarkers(shelterMarkers);
+    }
+    else if(nearShelterMapState < 0) {
+        message = "현재 나의 위치";
+        removeShelterMarker();
+        changeButtonColor("NearShelterChange", true);
+    }
+    displayMarker(locPosition, message);
+}
+
+function DrawChimsooMap() {
+    if(chimsooMapState > 0) 
+    {
+        changeButtonColor("ChimsooChange", false);
+        // 하천
+        fetch(riverUrl)
+            .then(res => res.json())
+            .then(resJson => {
+                
+                var riverDataTotalCount = resJson["getRvrwtLevelInfo"].totalCount;
+                var riverItem = resJson["getRvrwtLevelInfo"].item;
+
+                var riverLat = 0;
+                var riverLng = 0;
+                for(var i = 0; i < riverDataTotalCount; i++){
+                    for(var j = 0; j < riverDataTotalCount; j++){
+                        if(riverJsonData[i].siteCode == riverItem[j].siteCode){
+                            //json 파일의 위치 경도 가져오기 
+                            riverLat = riverJsonData[i].lat;
+                            riverLng = riverJsonData[i].lng;
+                            riverName = riverItem[j].siteName;
+                            riverStatus = riverItem[j].sttusNm;
+                            riverObserDate = (riverItem[j].obsrTime).substring(0, 10);
+                                
+                            if(riverItem[j].sttusNm != "정 상"){
+                                var current = new Date();
+                                var currentYear = current.getFullYear();
+                                var currentMonth = (current.getMonth() + 1) > 9 ? (current.getMonth() + 1): "0" + (current.getMonth() + 1); 
+                                var currentday= current.getDate() > 9 ? current.getDate() : "0" + current.getDate();
+                                var currentDate = currentYear + "-" + currentMonth + "-" + currentday;
+                                if(currentDate != riverObserDate){
+                                    riverStatus = "정 상";
+                                }
+                            }
+
+                            var marker = new kakao.maps.Marker({
+                                position: new kakao.maps.LatLng(riverLat, riverLng),
+                                map: map,
+                            }); 
+
+                            if(riverStatus == "정 상"){
+                                marker.setImage(markerImageGood);
+                            }
+                            else if(riverStatus == "주 의"){
+                                marker.setImage(markerImageCaution);
+                            }
+                            else if(riverStatus == "경 계"){
+                                marker.setImage(markerImageAlert);
+                            }
+                            else if(riverStatus == "위 험"){
+                                marker.setImage(markerImageDanger);
+                            }
+
+                            //하천 상태값 가져오기 
+                            var infoWindow = new kakao.maps.InfoWindow({
+                                content: '<div class = "markerBox">지역명 : ' + riverName + "<hr>현재 상태: " + riverStatus + '<br>측정 시간 : ' + riverItem[j].obsrTime + '</div>'
+                            });
+                            // 마커 추가
+                            chimsooMarkers.push(marker);
+                            // 마커 이벤트리스너 등록
+                            kakao.maps.event.addListener(marker, "mouseover", mouseOverListener(map, marker, infoWindow));
+                            kakao.maps.event.addListener(marker, "mouseout", mouseOutListener(infoWindow));
+                        }
+                        console.log("침수마커 + 하천마커 개수: " + chimsooMarkers.length);
+                    }
+                }
+            });
+
+            fetch(ChimsooUrl)
+            .then(res => res.json())
+            .then((data) =>{
+
+                let ChimsooTotalCount = data["getWaterImrsnInfo"].totalCount;
+                let ChimsooItem  = data["getWaterImrsnInfo"].item;
+
+                for(let i = 0; i < 11; i++) {
+                    for(let j = 0; j < ChimsooTotalCount; j++) {
+                        if(roadJsonData[i].siteCode == ChimsooItem[j].siteCode) {
+                            let roadLat = roadJsonData[i]["lat"];
+                            let roadLng = roadJsonData[i]["lng"];
+                            
+                            /*if(ChimsooItem[j]["sttus"] == "99") {
+                                continue;
+                            }*/
+
+                            let marker = new kakao.maps.Marker({
+                                position: new kakao.maps.LatLng(roadLat, roadLng),
+                                map: map,
+                            });
+                            
+                            if (Number(ChimsooItem[j].fludLevel) >= Number(ChimsooItem[j].alertLevel4)) 
+                            {
+                                status = ChimsooItem[j].alertLevel4Nm;
+                                marker.setImage(markerImageDanger);
+                            }
+                            else if ((Number(ChimsooItem[j].fludLevel) >= Number(ChimsooItem[j].alertLevel3)))
+                            {
+                                status = ChimsooItem[j].alertLevel3Nm;
+                                marker.setImage(markerImageAlert);
+                            }
+                            else if ((Number(ChimsooItem[j].fludLevel) >= 20))
+                            {
+                                status = "주 의"
+                                marker.setImage(markerImageCaution);
+                            }
+                            else {
+                                status = "정 상";
+                                marker.setImage(markerImageGood);
+                            }
+
+                            let infoWindow = new kakao.maps.InfoWindow({
+                                content: '<div class = "markerBox">' + "지역명 : " + ChimsooItem[j]["siteName"] + "<hr> 현재 수위 : " + ChimsooItem[j]["fludLevel"] + "<br> 현재 상태 : " + status + 
+                                "<br>측정 시간 : " + ChimsooItem[j]["obsrTime"] + '</div>'
+                            });
+                            
+                            // 마커 추가
+                            chimsooMarkers.push(marker);
+                            // 마커 이벤트리스너 등록
+                            kakao.maps.event.addListener(marker, "mouseover", mouseOverListener(map, marker, infoWindow));
+                            kakao.maps.event.addListener(marker, "mouseout", mouseOutListener(infoWindow));
+                        }
+                        console.log("침수마커 개수: " + chimsooMarkers.length);
+                    }
+                }
+            });
+    }
+    else if(chimsooMapState < 0) {
+    removeChimsooMarker();
+    changeButtonColor("ChimsooChange", true);
+    }
+}
+
+// 재난문자
+const url1 = 'http://apis.data.go.kr/1741000/DisasterMsg3/getDisasterMsg1List?ServiceKey=gVjf9Qby20bDX5FZ%2BSry1%2FkV2GtI%2BywHeuaIx9ssaMEHrOsrIOiG%2Bq1pB4CFccRj67xxpjrFiB7tioAac4LjBw%3D%3D&type=json&pageNo=1&numOfRows=1000';
+
+dataPane = document.getElementById("msg");
+
+var data = [];
+
+fetch(url1)
+    .then(res => res.json())
+    .then(resJson => {
+        for(var i = 0; i < resJson.DisasterMsg[1].row.length; i++) {
+            var LoadingMsg = '';
+            if(resJson.DisasterMsg[1].row[i].location_name.includes('부산광역시'))
+            {
+                LoadingMsg += resJson.DisasterMsg[1].row[i].create_date +'\n';
+                LoadingMsg += resJson.DisasterMsg[1].row[i].msg +'\n\n\n';
+                data.push(LoadingMsg);
+            }
+        }
+        for(var i = 0; i < data.length; i++) {
+            createDIV(data[i]);
+        }
+});
+                
+//GPS
+// HTML5의 geolocation으로 사용할 수 있는지 확인합니다 
+var lb ;
+var locPosition, message;
+
+if (navigator.geolocation) {
+    
+    // GeoLocation을 이용해서 접속 위치를 얻어옵니다
+    navigator.geolocation.getCurrentPosition(function(position) {
+        
+        var lat = position.coords.latitude, // 위도
+            lon = position.coords.longitude; // 경도
+        var sw = new kakao.maps.LatLng(lat+0.02000, lon+0.02000),
+            ne = new kakao.maps.LatLng(lat-0.02000, lon-0.02000);
+        
+        locPosition = new kakao.maps.LatLng(lat, lon), // 마커가 표시될 위치를 geolocation으로 얻어온 좌표로 생성합니다
+        message = '<div style="padding:5px;">나의 현재 위치</div>'; // 인포윈도우에 표시될 내용입니다
+        
+        // 마커와 인포윈도우를 표시합니다
+        displayMarker(locPosition, message);
+        lb = new kakao.maps.LatLngBounds(sw, ne);
+        console.log("GPS 1 : " + sw + " 2 : " + ne);
+    });
+    
+} else { // HTML5의 GeoLocation을 사용할 수 없을때 마커 표시 위치와 인포윈도우 내용을 설정합니다
+    
+    var locPosition = new kakao.maps.LatLng(33.450701, 126.570667),    
+        message = 'geolocation을 사용할수 없어요..'
+        
+    displayMarker(locPosition, message);
+}
+
+let GPSinfowindow;
+function displayMarker(locPosition, message) {
+    // 마커를 생성합니다
+    var marker = new kakao.maps.Marker({  
+        map: map, 
+        position: locPosition
+    }); 
+
+    var iwContent = message, // 인포윈도우에 표시할 내용
+        iwRemoveable = true;
+
+    // 인포윈도우를 생성합니다
+    GPSinfowindow = new kakao.maps.InfoWindow({
+        content : '<div class = "markerBox">' + message + '</div>',
+    });
+
+    // 인포윈도우를 마커위에 표시합니다 
+    //kakao.maps.event.addListener(marker, "mouseover", mouseOverListener(map,marker, infowindow));
+    //kakao.maps.event.addListener(marker, "mouseout", mouseOutListener(infowindow));
+    GPSinfowindow.open(map, marker);
+    // 지도 중심좌표를 접속위치로 변경합니다
+    map.setCenter(locPosition);      
+}    
+
+                DrawChimsooMap();
+                //DrawShelterMap();
+        </script>
+    </body>
+</html>

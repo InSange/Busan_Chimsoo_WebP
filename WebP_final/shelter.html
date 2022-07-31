@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>부산 대피소 위치</title>
+    </head>
+    <body>
+        <div id="map" style="width:750px;height:350px;"></div>
+
+
+        <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=5e95bb8bc3c512832605f3ff6e7cee15&libraries=clusterer"></script>
+        <script type = "text/javascript" src = "./Busan_shelters.json"></script>
+        <script>
+            let shelterData = JSON.parse(JSON.stringify(data));
+
+            function mouseOverListener(map, marker, inforWindow){
+                return function(){
+                    inforWindow.open(map, marker);
+                };
+            }
+            function mouseOutListener(infoWindow){
+                return function(){
+                    infoWindow.close();
+                };
+            }
+
+
+            let mapContainer = document.getElementById('map'), 
+                mapOption = {
+                    center: new kakao.maps.LatLng(35.13417, 129.11397), 
+                    level: 7,
+                    mapTypeId : kakao.maps.MapTypeId.ROADMAP 
+                }; 
+
+            
+            let map = new kakao.maps.Map(mapContainer, mapOption); 
+
+            
+            let clusterer = new kakao.maps.MarkerClusterer({
+                map: map,
+                averageCenter: true,
+                minLevel: 5,
+            });
+            
+            let markers = [];
+
+            let shelters = shelterData;
+            console.log(shelters[3]["위도"]);
+
+            for(let i = 0; i < shelters.length; i++){
+                let lat = shelters[i]["위도"];
+                let lng = shelters[i]["경도"];
+                let marker = new kakao.maps.Marker({
+                    position : new kakao.maps.LatLng(lat, lng),
+                    map : map,
+                });
+                let infoWindow = new kakao.maps.InfoWindow({
+                    content : shelters[i]["지진해일대피소명"]
+                })
+
+                markers.push(marker);
+
+                kakao.maps.event.addListener(marker, "mouseover", mouseOverListener(map,marker, infoWindow));
+                kakao.maps.event.addListener(marker, "mouseout", mouseOutListener(infoWindow));
+            }
+            clusterer.addMarkers(markers);
+            
+        </script>
+    </body>
+</html>

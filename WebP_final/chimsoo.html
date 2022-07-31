@@ -1,0 +1,77 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>공공데이터 API 사용 예제</title>
+</head>
+
+<body>
+    <p id="sample_data"></p>
+
+    <script type="text/javascript" src="./data.json"></script>
+        
+        <script>
+        parseData = JSON.parse(JSON.stringify(chimsoo));
+        </script>
+        <div id="map" style="width: 100%; height: 100vh"></div>
+        <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=53b790bfdeffa66753ad2fbb8d35aca1&libraries=clusterer"></script>
+    <script>
+        const url = 'http://apis.data.go.kr/6260000/BusanWaterImrsnInfoService/getWaterImrsnInfo?serviceKey=O5mHIqA%2BrRcyb7jIA%2BeXsivapRNt%2BweXRjKSGi4j5Xjd6QSfPEODjDy7N1LVDhwJIKCt7x3GAQ0npSlK3reYKg%3D%3D&numOfRows=20&pageNo=1&resultType=json';
+
+        dataPane = document.getElementById("sample_data");
+
+        function mouseOverListener(map, marker, infoWindow) {
+            return function () {
+                infoWindow.open(map, marker);
+            };
+        }
+        // 인포윈도우 표시 닫기
+        function mouseOutListener(infoWindow) {
+            return function () {
+                infoWindow.close();
+            };
+        }
+        var mapContainer = document.getElementById("map"); // 지도를 표시할 div
+        var mapOption = {
+            center: new kakao.maps.LatLng(35.13417, 129.11397), // 지도의 중심좌표
+            level: 7, // 지도의 확대 레벨
+        };
+        var map = new kakao.maps.Map(mapContainer, mapOption);
+        var clusterer = new kakao.maps.MarkerClusterer({
+            map: map, // 마커들을 클러스터로 관리하고 표시할 지도 객체
+            averageCenter: true, // 클러스터에 포함된 마커들의 평균 위치를 클러스터 마커 위치로 설정
+            minLevel: 5, // 클러스터 할 최소 지도 레벨
+        });
+
+        var ChimsooCount;
+        fetch(url).
+            then(res => res.json())
+            .then(function(data){
+                var ChimsooMarkers = [];
+                ChimsooCount  = data["getWaterImrsnInfo"].item;
+                for(var i = 0; i < 11; i++) {
+                    for(var j = 0; j < 14; j++) {
+                        if(parseData[i].siteCode == ChimsooCount[j].siteCode) {
+                            var lat = parseData[i]["lat"];
+                            var lng = parseData[i]["lng"];
+                            var marker = new kakao.maps.Marker({
+                                position: new kakao.maps.LatLng(lat, lng),
+                                map: map,
+                            });
+                            
+                            var infoWindow = new kakao.maps.InfoWindow({
+                                content: ChimsooCount[i]["centerName"],
+                            });
+                            // 마커 추가
+                            ChimsooMarkers.push(marker);
+                            // 마커 이벤트리스너 등록
+                            kakao.maps.event.addListener(marker, "mouseover", mouseOverListener(map, marker, infoWindow));
+                            kakao.maps.event.addListener(marker, "mouseout", mouseOutListener(infoWindow));
+                        }
+                    }
+                }
+                clusterer.addMarkers(ChimsooMarkers);
+            });
+    </script>
+</body>
+
+</html>
